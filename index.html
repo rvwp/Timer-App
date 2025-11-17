@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Remake Productivity Timer</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Use Inter Font -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a1a2e; /* Dark background for high contrast */
+        }
+        .timer-display {
+            font-size: 5rem; /* Large font for visibility */
+            font-weight: 900;
+            letter-spacing: -2px;
+            color: #e94560; /* Accent color for time */
+            transition: font-size 0.2s;
+        }
+        .time-input {
+            width: 5rem;
+            text-align: center;
+        }
+        /* Custom ring focus color for accessibility */
+        .ring-focus:focus {
+            --tw-ring-color: #53bf9d;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-4">
+
+    <div class="w-full max-w-sm md:max-w-md bg-gray-800 p-8 rounded-3xl shadow-2xl space-y-8">
+        
+        <!-- Mode Selector -->
+        <div class="flex justify-center space-x-2 text-white">
+            <button id="mode-timer-btn" onclick="switchMode('timer')" class="px-4 py-2 text-lg font-semibold rounded-t-xl transition-colors duration-200 border-b-4 border-transparent text-gray-400">
+                Timer
+            </button>
+            <button id="mode-stopwatch-btn" onclick="switchMode('stopwatch')" class="px-4 py-2 text-lg font-semibold rounded-t-xl transition-colors duration-200 border-b-4 border-transparent text-gray-400">
+                Stopwatch
+            </button>
+        </div>
+
+        <h1 class="text-3xl font-bold text-center text-white mb-6">
+            Timer V2
+        </h1>
+
+        <!-- Timer Display Area -->
+        <div id="timer-display" class="timer-display text-center rounded-xl bg-gray-900 p-6 shadow-inner border-4 border-gray-700 select-none">
+            25:00
+        </div>
+
+        <!-- Controls Area (Presets and Custom Input - Hidden in Stopwatch mode) -->
+        <div id="controls-area" class="flex flex-col space-y-4 transition-all duration-300">
+            <div class="flex justify-center space-x-3">
+                <button onclick="setPreset(25)" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-xl shadow-md transition duration-150 active:scale-95 text-sm">
+                    25 Min
+                </button>
+                <button onclick="setPreset(5)" class="bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2 px-4 rounded-xl shadow-md transition duration-150 active:scale-95 text-sm">
+                    5 Min Break
+                </button>
+                <button onclick="setPreset(15)" class="bg-pink-600 hover:bg-pink-700 text-white font-semibold py-2 px-4 rounded-xl shadow-md transition duration-150 active:scale-95 text-sm">
+                    15 Min Break
+                </button>
+            </div>
+
+            <div class="flex items-center justify-center space-x-2 text-white text-sm">
+                <label for="customMinutes" class="text-gray-400">Set Custom Time (min):</label>
+                <input id="customMinutes" type="number" value="25" min="1" class="time-input bg-gray-700 text-white p-2 rounded-lg border border-gray-600 ring-focus focus:ring-2 focus:ring-green-500 focus:border-transparent transition" onchange="updateCustomTime()">
+            </div>
+        </div>
+
+        <!-- Control Buttons -->
+        <div class="flex justify-center space-x-4">
+            <button id="start-btn" onclick="handleStart()" class="flex items-center justify-center bg-green-500 hover:bg-green-600 text-white font-extrabold py-3 px-6 rounded-xl shadow-lg transition duration-150 transform hover:scale-105 active:scale-95">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                </svg>
+                Start
+            </button>
+            
+            <button id="pause-btn" onclick="handlePause()" disabled class="flex items-center justify-center bg-yellow-500 hover:bg-yellow-600 text-white font-extrabold py-3 px-6 rounded-xl shadow-lg transition duration-150 transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM9.25 8.5A.75.75 0 008.5 7.75V12.25A.75.75 0 009.25 13h1.5A.75.75 0 0011.5 12.25V7.75A.75.75 0 0010.75 7h-1.5z" clip-rule="evenodd" />
+                </svg>
+                Pause
+            </button>
+            
+            <button id="reset-btn" onclick="handleReset()" class="flex items-center justify-center bg-red-500 hover:bg-red-600 text-white font-extrabold py-3 px-6 rounded-xl shadow-lg transition duration-150 transform hover:scale-105 active:scale-95">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H8a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm-1 9a1 1 0 011 1v2.101a7.002 7.002 0 0011.601-2.566 1 1 0 111.885-.666A5.002 5.002 0 0014.001 13H12a1 1 0 110-2h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 010-2h2.001a7.002 7.002 0 01-11.601-2.566 1 1 0 11-1.885.666z" clip-rule="evenodd" />
+                </svg>
+                Reset
+            </button>
+        </div>
+
+        <!-- Status Message Box -->
+        <div id="status-message" class="text-center text-gray-300 min-h-[1.5rem] mt-4">
+            Ready to focus?
+        </div>
+
+    </div>
+
+    <script>
+        // --- Timer Variables and State ---
+        let totalSeconds = 25 * 60; // Countdown seconds
+        let defaultSeconds = 25 * 60;
+        let stopwatchSeconds = 0; // Stopwatch seconds
+        let timerInterval = null;
+        let isRunning = false;
+        let currentMode = 'timer'; // 'timer' or 'stopwatch'
+        
+        // --- DOM Elements ---
+        const display = document.getElementById('timer-display');
+        const startBtn = document.getElementById('start-btn');
+        const pauseBtn = document.getElementById('pause-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const controlsArea = document.getElementById('controls-area');
+        const customMinutesInput = document.getElementById('customMinutes');
+        const statusMessage = document.getElementById('status-message');
+        const modeTimerBtn = document.getElementById('mode-timer-btn');
+        const modeStopwatchBtn = document.getElementById('mode-stopwatch-btn');
+
+        /**
+         * Generates and plays a simple alarm beep using the Web Audio API.
+         * This creates a sound without needing external files or complex libraries.
+         */
+        function playAlarm() {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContext) {
+                console.error("Web Audio API not supported.");
+                return;
+            }
+
+            try {
+                const audioCtx = new AudioContext();
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+
+                // Setup the oscillator (basic sine wave tone)
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // High-pitched A5 note
+
+                // Connect everything: Oscillator -> Gain -> Destination
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+
+                // Set volume and schedule the sound duration (two short beeps)
+                gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
+                
+                // First beep
+                oscillator.start(audioCtx.currentTime);
+                oscillator.stop(audioCtx.currentTime + 0.15); 
+                
+                // Second beep slightly later
+                const oscillator2 = audioCtx.createOscillator();
+                oscillator2.type = 'sine';
+                oscillator2.frequency.setValueAtTime(660, audioCtx.currentTime + 0.2); // G#4 note
+                oscillator2.connect(gainNode);
+                oscillator2.start(audioCtx.currentTime + 0.2);
+                oscillator2.stop(audioCtx.currentTime + 0.35);
+
+            } catch (e) {
+                console.error("Could not play alarm sound:", e);
+                // Fallback action if sound fails (e.g., console log)
+            }
+        }
+
+        /**
+         * Generic function to update the time display based on the current mode.
+         */
+        function updateDisplay() {
+            let secondsTotal = currentMode === 'timer' ? totalSeconds : stopwatchSeconds;
+            
+            const hours = Math.floor(secondsTotal / 3600);
+            const minutes = Math.floor((secondsTotal % 3600) / 60);
+            const seconds = secondsTotal % 60;
+
+            let formattedTime;
+            // Display HH:MM:SS if hours > 0, otherwise MM:SS
+            if (hours > 0) {
+                formattedTime = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                display.style.fontSize = '4rem'; // Adjust size for HH:MM:SS to fit
+            } else {
+                formattedTime = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                display.style.fontSize = '5rem'; // Default large size
+            }
+            
+            display.textContent = formattedTime;
+        }
+
+        /**
+         * Updates the state of control buttons and styles based on the mode.
+         */
+        function updateState() {
+            // Mode buttons styling
+            modeTimerBtn.classList.remove('border-red-500', 'text-white');
+            modeStopwatchBtn.classList.remove('border-red-500', 'text-white');
+            modeTimerBtn.classList.add('text-gray-400');
+            modeStopwatchBtn.classList.add('text-gray-400');
+
+            if (currentMode === 'timer') {
+                modeTimerBtn.classList.add('border-red-500', 'text-white');
+                controlsArea.classList.remove('hidden');
+            } else { // stopwatch
+                modeStopwatchBtn.classList.add('border-red-500', 'text-white');
+                controlsArea.classList.add('hidden');
+            }
+
+            // Control buttons availability
+            startBtn.disabled = isRunning;
+            pauseBtn.disabled = !isRunning;
+            
+            if (currentMode === 'timer') {
+                // Reset is available unless timer is stopped at the default time
+                resetBtn.disabled = (totalSeconds === defaultSeconds && !isRunning); 
+            } else { // stopwatch
+                // Reset is available unless stopwatch is stopped at 00:00
+                resetBtn.disabled = (stopwatchSeconds === 0 && !isRunning);
+            }
+        }
+
+        /**
+         * Switches between Timer and Stopwatch modes.
+         */
+        function switchMode(newMode) {
+            if (newMode === currentMode) return;
+            
+            handlePause(); // Pause the currently running timer/stopwatch
+            currentMode = newMode;
+            
+            // Set initial state for the new mode
+            if (currentMode === 'timer') {
+                statusMessage.textContent = 'Timer mode activated. Ready to countdown.';
+                // Ensure countdown is reset to default time
+                resetCountdown();
+            } else {
+                statusMessage.textContent = 'Stopwatch mode activated. Ready to count up.';
+                // Ensure stopwatch is reset to 0
+                resetStopwatch();
+            }
+            updateState();
+        }
+
+
+        // --- GENERIC CONTROL HANDLERS ---
+
+        function handleStart() {
+            if (isRunning) return;
+
+            if (currentMode === 'timer') {
+                startCountdown();
+            } else {
+                startStopwatch();
+            }
+        }
+
+        function handlePause() {
+            if (!isRunning) return;
+
+            clearInterval(timerInterval);
+            isRunning = false;
+            statusMessage.textContent = 'Paused. Ready to resume?';
+            updateState();
+        }
+
+        function handleReset() {
+            if (currentMode === 'timer') {
+                resetCountdown();
+            } else {
+                resetStopwatch();
+            }
+        }
+
+        // --- COUNTDOWN TIMER LOGIC ---
+
+        function startCountdown() {
+            if (totalSeconds <= 0) {
+                 statusMessage.textContent = 'Time must be set before starting.';
+                 return;
+            }
+
+            isRunning = true;
+            statusMessage.textContent = 'Focus time started! Keep pushing.';
+            updateState();
+
+            timerInterval = setInterval(() => {
+                if (totalSeconds <= 0) {
+                    clearInterval(timerInterval);
+                    isRunning = false;
+                    
+                    // Trigger the alarm sound
+                    playAlarm(); 
+                    
+                    statusMessage.textContent = 'Time’s up! Take a well-deserved break.';
+                    display.classList.add('bg-green-800', 'text-white');
+                    display.classList.remove('bg-gray-900', 'text-red-500');
+                    updateState();
+                    return;
+                }
+                
+                totalSeconds--;
+                updateDisplay();
+            }, 1000);
+        }
+
+        function resetCountdown() {
+            clearInterval(timerInterval);
+            isRunning = false;
+            totalSeconds = defaultSeconds;
+            
+            // Remove the 'time up' style
+            display.classList.remove('bg-green-800', 'text-white');
+            display.classList.add('bg-gray-900', 'text-red-500');
+
+            updateDisplay();
+            statusMessage.textContent = 'Timer reset.';
+            updateState();
+        }
+
+        // --- STOPWATCH LOGIC ---
+
+        function startStopwatch() {
+            isRunning = true;
+            statusMessage.textContent = 'Stopwatch running.';
+            updateState();
+
+            timerInterval = setInterval(() => {
+                stopwatchSeconds++;
+                updateDisplay();
+            }, 1000);
+        }
+
+        function resetStopwatch() {
+            clearInterval(timerInterval);
+            isRunning = false;
+            stopwatchSeconds = 0;
+            
+            // Ensure display styles are reset
+            display.classList.remove('bg-green-800', 'text-white');
+            display.classList.add('bg-gray-900', 'text-red-500');
+
+            updateDisplay();
+            statusMessage.textContent = 'Stopwatch reset.';
+            updateState();
+        }
+
+
+        // --- PRESET/CUSTOM LOGIC (only affects Timer mode) ---
+        
+        /**
+         * Sets the timer to a specific minute preset.
+         */
+        function setPreset(minutes) {
+            handlePause();
+            
+            // Set new default and total time for the Countdown Timer
+            defaultSeconds = minutes * 60;
+            totalSeconds = defaultSeconds;
+            
+            // Update the custom input to reflect the preset
+            customMinutesInput.value = minutes;
+
+            resetCountdown(); 
+            statusMessage.textContent = `Set to ${minutes} minutes. Ready!`;
+        }
+
+        /**
+         * Updates the default time based on the custom input field.
+         */
+        function updateCustomTime() {
+            const minutes = parseInt(customMinutesInput.value);
+            if (isNaN(minutes) || minutes <= 0) {
+                customMinutesInput.value = Math.max(1, defaultSeconds / 60); 
+                return;
+            }
+
+            setPreset(minutes);
+        }
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize in Timer mode
+            switchMode('timer'); 
+            
+            // Ensure the input value matches the starting default
+            customMinutesInput.value = defaultSeconds / 60;
+        });
+    </script>
+</body>
+</html>
