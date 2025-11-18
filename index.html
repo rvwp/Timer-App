@@ -158,7 +158,10 @@
         const lapBtn = document.getElementById('lap-btn');
         const lapsArea = document.getElementById('laps-area');
         const lapsList = document.getElementById('laps-list');
+ 
 
+
+ main
         const settingsBtn = document.getElementById('settings-btn');
         const settingsPanel = document.getElementById('settings-panel');
         const alarmSoundSelect = document.getElementById('alarm-sound');
@@ -216,19 +219,12 @@
         function updateDisplay() {
             let secondsTotal = currentMode === 'timer' ? totalSeconds : stopwatchSeconds;
             
-            const hours = Math.floor(secondsTotal / 3600);
-            const minutes = Math.floor((secondsTotal % 3600) / 60);
-            const seconds = secondsTotal % 60;
+            const minutes = Math.floor(secondsTotal / 60);
+            const seconds = Math.floor(secondsTotal % 60);
+            const milliseconds = Math.floor((secondsTotal * 100) % 100);
 
-            let formattedTime;
-            // Display HH:MM:SS if hours > 0, otherwise MM:SS
-            if (hours > 0) {
-                formattedTime = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-                display.style.fontSize = '4rem'; // Adjust size for HH:MM:SS to fit
-            } else {
-                formattedTime = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-                display.style.fontSize = '5rem'; // Default large size
-            }
+            let formattedTime = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}:${String(milliseconds).padStart(2, '0')}`;
+            display.style.fontSize = '4rem'; // Adjust size for MM:SS:MS to fit
             
             display.textContent = formattedTime;
         }
@@ -310,7 +306,18 @@
                 clearInterval(timerInterval);
                 isRunning = false;
                 statusMessage.textContent = 'Paused. Ready to resume?';
+ feature/millisecond-display
             } else {
+                // Start logic
+                if (currentMode === 'timer') {
+                    startCountdown();
+                } else {
+                    startStopwatch();
+                }
+            }
+            updateState();
+
+            
                 // Start logic
                 if (currentMode === 'timer') {
                     startCountdown();
@@ -338,6 +345,7 @@
             const li = document.createElement('li');
             li.textContent = `Lap ${laps.length}: ${formatTime(lapTime)}`;
             lapsList.appendChild(li);
+ main
         }
 
         function formatTime(secondsTotal) {
@@ -350,6 +358,25 @@
             } else {
                 return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
             }
+        }
+
+        function handleLap() {
+            if (!isRunning) return;
+
+            const lapTime = stopwatchSeconds;
+            laps.push(lapTime);
+
+            const li = document.createElement('li');
+            li.textContent = `Lap ${laps.length}: ${formatTime(lapTime)}`;
+            lapsList.appendChild(li);
+        }
+
+        function formatTime(secondsTotal) {
+            const minutes = Math.floor(secondsTotal / 60);
+            const seconds = Math.floor(secondsTotal % 60);
+            const milliseconds = Math.floor((secondsTotal * 100) % 100);
+
+            return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}:${String(milliseconds).padStart(2, '0')}`;
         }
 
         // --- COUNTDOWN TIMER LOGIC ---
@@ -379,9 +406,9 @@
                     return;
                 }
                 
-                totalSeconds--;
+                totalSeconds -= 0.01;
                 updateDisplay();
-            }, 1000);
+            }, 10);
         }
 
         function resetCountdown() {
@@ -406,9 +433,9 @@
             updateState();
 
             timerInterval = setInterval(() => {
-                stopwatchSeconds++;
+                stopwatchSeconds += 0.01;
                 updateDisplay();
-            }, 1000);
+            }, 10);
         }
 
         function resetStopwatch() {
