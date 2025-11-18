@@ -34,6 +34,16 @@
 
     <div class="w-full max-w-sm md:max-w-md bg-gray-800 p-8 rounded-3xl shadow-2xl space-y-8">
         
+        <!-- Settings Toggle -->
+        <div class="flex justify-end">
+            <button id="settings-btn" class="text-gray-400 hover:text-white transition-colors duration-200">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+            </button>
+        </div>
+
         <!-- Mode Selector -->
         <div class="flex justify-center space-x-2 text-white">
             <button id="mode-timer-btn" onclick="switchMode('timer')" class="px-4 py-2 text-lg font-semibold rounded-t-xl transition-colors duration-200 border-b-4 border-transparent text-gray-400">
@@ -42,6 +52,20 @@
             <button id="mode-stopwatch-btn" onclick="switchMode('stopwatch')" class="px-4 py-2 text-lg font-semibold rounded-t-xl transition-colors duration-200 border-b-4 border-transparent text-gray-400">
                 Stopwatch
             </button>
+        </div>
+
+        <!-- Settings Panel -->
+        <div id="settings-panel" class="hidden bg-gray-900 p-4 rounded-lg mt-4">
+            <h3 class="text-lg font-semibold text-white mb-2">Settings</h3>
+            <div class="flex items-center justify-between">
+                <label for="alarm-sound" class="text-gray-400">Alarm Sound</label>
+                <select id="alarm-sound" class="bg-gray-700 text-white p-2 rounded-lg border border-gray-600">
+                    <!-- Options will be populated by JavaScript -->
+                </select>
+                <button id="test-audio-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-xl">
+                    Test
+                </button>
+            </div>
         </div>
 
         <h1 class="text-3xl font-bold text-center text-white mb-6">
@@ -122,7 +146,7 @@
         let currentMode = 'timer'; // 'timer' or 'stopwatch'
         let laps = [];
         
-        // --- DOM Elements ---
+        //  DOM Elements 
         const display = document.getElementById('timer-display');
         const startBtn = document.getElementById('start-btn');
         const resetBtn = document.getElementById('reset-btn');
@@ -134,12 +158,34 @@
         const lapBtn = document.getElementById('lap-btn');
         const lapsArea = document.getElementById('laps-area');
         const lapsList = document.getElementById('laps-list');
+ feature/settings-panel
+        const settingsBtn = document.getElementById('settings-btn');
+        const settingsPanel = document.getElementById('settings-panel');
+        const alarmSoundSelect = document.getElementById('alarm-sound');
+        const testAudioBtn = document.getElementById('test-audio-btn');
 
-        /**
-         * Generates and plays a simple alarm beep using the Web Audio API.
-         * This creates a sound without needing external files or complex libraries.
-         */
+        const alarmSounds = {
+            'default': [
+                { type: 'sine', frequency: 880, duration: 0.15, delay: 0 },
+                { type: 'sine', frequency: 660, duration: 0.15, delay: 0.2 }
+            ],
+            'highPitch': [
+                { type: 'triangle', frequency: 1200, duration: 0.1, delay: 0 },
+                { type: 'triangle', frequency: 1200, duration: 0.1, delay: 0.15 }
+            ],
+            'quickChime': [
+                { type: 'square', frequency: 1046.50, duration: 0.08, delay: 0 }, // C6
+                { type: 'square', frequency: 1396.91, duration: 0.08, delay: 0.1 }, // F6
+                { type: 'square', frequency: 1567.98, duration: 0.08, delay: 0.2 }  // G6
+            ]
+        };
+
+ main
+
         function playAlarm() {
+            const selectedSound = alarmSoundSelect.value;
+            const soundSequence = alarmSounds[selectedSound];
+
             const AudioContext = window.AudioContext || window.webkitAudioContext;
             if (!AudioContext) {
                 console.error("Web Audio API not supported.");
@@ -148,40 +194,26 @@
 
             try {
                 const audioCtx = new AudioContext();
-                const oscillator = audioCtx.createOscillator();
                 const gainNode = audioCtx.createGain();
-
-                // Setup the oscillator (basic sine wave tone)
-                oscillator.type = 'sine';
-                oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // High-pitched A5 note
-
-                // Connect everything: Oscillator -> Gain -> Destination
-                oscillator.connect(gainNode);
                 gainNode.connect(audioCtx.destination);
-
-                // Set volume and schedule the sound duration (two short beeps)
                 gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
-                
-                // First beep
-                oscillator.start(audioCtx.currentTime);
-                oscillator.stop(audioCtx.currentTime + 0.15); 
-                
-                // Second beep slightly later
-                const oscillator2 = audioCtx.createOscillator();
-                oscillator2.type = 'sine';
-                oscillator2.frequency.setValueAtTime(660, audioCtx.currentTime + 0.2); // G#4 note
-                oscillator2.connect(gainNode);
-                oscillator2.start(audioCtx.currentTime + 0.2);
-                oscillator2.stop(audioCtx.currentTime + 0.35);
+
+                soundSequence.forEach(note => {
+                    const oscillator = audioCtx.createOscillator();
+                    oscillator.type = note.type;
+                    oscillator.frequency.setValueAtTime(note.frequency, audioCtx.currentTime + note.delay);
+                    oscillator.connect(gainNode);
+                    oscillator.start(audioCtx.currentTime + note.delay);
+                    oscillator.stop(audioCtx.currentTime + note.delay + note.duration);
+                });
 
             } catch (e) {
                 console.error("Could not play alarm sound:", e);
-                // Fallback action if sound fails (e.g., console log)
             }
         }
 
         /**
-         * Generic function to update the time display based on the current mode.
+         * Generic function to update the time display based on the current mode
          */
         function updateDisplay() {
             let secondsTotal = currentMode === 'timer' ? totalSeconds : stopwatchSeconds;
@@ -434,6 +466,24 @@
 
         // --- Initialization ---
         document.addEventListener('DOMContentLoaded', () => {
+            // Populate alarm sound options
+            for (const sound in alarmSounds) {
+                const option = document.createElement('option');
+                option.value = sound;
+                option.textContent = sound.charAt(0).toUpperCase() + sound.slice(1);
+                alarmSoundSelect.appendChild(option);
+            }
+
+            // Settings panel toggle
+            settingsBtn.addEventListener('click', () => {
+                settingsPanel.classList.toggle('hidden');
+            });
+
+            // Test audio button
+            testAudioBtn.addEventListener('click', () => {
+                playAlarm();
+            });
+
             // Initialize in Timer mode
             switchMode('timer'); 
             
