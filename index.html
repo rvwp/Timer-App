@@ -75,18 +75,11 @@
 
         <!-- Control Buttons -->
         <div class="flex justify-center space-x-4">
-            <button id="start-btn" onclick="handleStart()" class="flex items-center justify-center bg-green-500 hover:bg-green-600 text-white font-extrabold py-3 px-6 rounded-xl shadow-lg transition duration-150 transform hover:scale-105 active:scale-95">
+            <button id="start-btn" onclick="handleStartPause()" class="flex items-center justify-center bg-green-500 hover:bg-green-600 text-white font-extrabold py-3 px-6 rounded-xl shadow-lg transition duration-150 transform hover:scale-105 active:scale-95">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
                 </svg>
                 Start
-            </button>
-            
-            <button id="pause-btn" onclick="handlePause()" disabled class="flex items-center justify-center bg-yellow-500 hover:bg-yellow-600 text-white font-extrabold py-3 px-6 rounded-xl shadow-lg transition duration-150 transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM9.25 8.5A.75.75 0 008.5 7.75V12.25A.75.75 0 009.25 13h1.5A.75.75 0 0011.5 12.25V7.75A.75.75 0 0010.75 7h-1.5z" clip-rule="evenodd" />
-                </svg>
-                Pause
             </button>
             
             <button id="reset-btn" onclick="handleReset()" class="flex items-center justify-center bg-red-500 hover:bg-red-600 text-white font-extrabold py-3 px-6 rounded-xl shadow-lg transition duration-150 transform hover:scale-105 active:scale-95">
@@ -95,11 +88,26 @@
                 </svg>
                 Reset
             </button>
+
+            <button id="lap-btn" onclick="handleLap()" class="flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white font-extrabold py-3 px-6 rounded-xl shadow-lg transition duration-150 transform hover:scale-105 active:scale-95 hidden">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v4a1 1 0 00.293.707l3 3a1 1 0 001.414-1.414L11 10.586V7z" clip-rule="evenodd" />
+                </svg>
+                Lap
+            </button>
         </div>
 
         <!-- Status Message Box -->
         <div id="status-message" class="text-center text-gray-300 min-h-[1.5rem] mt-4">
             Ready to focus?
+        </div>
+
+        <!-- Laps Display -->
+        <div id="laps-area" class="hidden w-full max-w-sm md:max-w-md bg-gray-800 p-4 rounded-xl shadow-inner mt-4">
+            <h3 class="text-lg font-semibold text-white text-center mb-2">Laps</h3>
+            <ol id="laps-list" class="list-decimal list-inside text-gray-300 space-y-1 overflow-y-auto max-h-40">
+                <!-- Lap times will be inserted here -->
+            </ol>
         </div>
 
     </div>
@@ -112,17 +120,20 @@
         let timerInterval = null;
         let isRunning = false;
         let currentMode = 'timer'; // 'timer' or 'stopwatch'
+        let laps = [];
         
         // --- DOM Elements ---
         const display = document.getElementById('timer-display');
         const startBtn = document.getElementById('start-btn');
-        const pauseBtn = document.getElementById('pause-btn');
         const resetBtn = document.getElementById('reset-btn');
         const controlsArea = document.getElementById('controls-area');
         const customMinutesInput = document.getElementById('customMinutes');
         const statusMessage = document.getElementById('status-message');
         const modeTimerBtn = document.getElementById('mode-timer-btn');
         const modeStopwatchBtn = document.getElementById('mode-stopwatch-btn');
+        const lapBtn = document.getElementById('lap-btn');
+        const lapsArea = document.getElementById('laps-area');
+        const lapsList = document.getElementById('laps-list');
 
         /**
          * Generates and plays a simple alarm beep using the Web Audio API.
@@ -205,14 +216,26 @@
             if (currentMode === 'timer') {
                 modeTimerBtn.classList.add('border-red-500', 'text-white');
                 controlsArea.classList.remove('hidden');
+                lapBtn.classList.add('hidden');
+                lapsArea.classList.add('hidden');
             } else { // stopwatch
                 modeStopwatchBtn.classList.add('border-red-500', 'text-white');
                 controlsArea.classList.add('hidden');
+                lapBtn.classList.remove('hidden');
+                lapsArea.classList.remove('hidden');
             }
 
             // Control buttons availability
-            startBtn.disabled = isRunning;
-            pauseBtn.disabled = !isRunning;
+            if (isRunning) {
+                startBtn.textContent = 'Pause';
+                startBtn.classList.remove('bg-green-500', 'hover:bg-green-600');
+                startBtn.classList.add('bg-yellow-500', 'hover:bg-yellow-600');
+            } else {
+                startBtn.textContent = 'Start';
+                startBtn.classList.remove('bg-yellow-500', 'hover:bg-yellow-600');
+                startBtn.classList.add('bg-green-500', 'hover:bg-green-600');
+            }
+            startBtn.disabled = false;
             
             if (currentMode === 'timer') {
                 // Reset is available unless timer is stopped at the default time
@@ -220,6 +243,7 @@
             } else { // stopwatch
                 // Reset is available unless stopwatch is stopped at 00:00
                 resetBtn.disabled = (stopwatchSeconds === 0 && !isRunning);
+                lapBtn.disabled = !isRunning;
             }
         }
 
@@ -229,7 +253,9 @@
         function switchMode(newMode) {
             if (newMode === currentMode) return;
             
-            handlePause(); // Pause the currently running timer/stopwatch
+            if (isRunning) {
+                handleStartPause(); // Pause the currently running timer/stopwatch
+            }
             currentMode = newMode;
             
             // Set initial state for the new mode
@@ -248,22 +274,20 @@
 
         // --- GENERIC CONTROL HANDLERS ---
 
-        function handleStart() {
-            if (isRunning) return;
-
-            if (currentMode === 'timer') {
-                startCountdown();
+        function handleStartPause() {
+            if (isRunning) {
+                // Pause logic
+                clearInterval(timerInterval);
+                isRunning = false;
+                statusMessage.textContent = 'Paused. Ready to resume?';
             } else {
-                startStopwatch();
+                // Start logic
+                if (currentMode === 'timer') {
+                    startCountdown();
+                } else {
+                    startStopwatch();
+                }
             }
-        }
-
-        function handlePause() {
-            if (!isRunning) return;
-
-            clearInterval(timerInterval);
-            isRunning = false;
-            statusMessage.textContent = 'Paused. Ready to resume?';
             updateState();
         }
 
@@ -272,6 +296,29 @@
                 resetCountdown();
             } else {
                 resetStopwatch();
+            }
+        }
+
+        function handleLap() {
+            if (!isRunning) return;
+
+            const lapTime = stopwatchSeconds;
+            laps.push(lapTime);
+
+            const li = document.createElement('li');
+            li.textContent = `Lap ${laps.length}: ${formatTime(lapTime)}`;
+            lapsList.appendChild(li);
+        }
+
+        function formatTime(secondsTotal) {
+            const hours = Math.floor(secondsTotal / 3600);
+            const minutes = Math.floor((secondsTotal % 3600) / 60);
+            const seconds = secondsTotal % 60;
+
+            if (hours > 0) {
+                return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            } else {
+                return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
             }
         }
 
@@ -338,6 +385,8 @@
             clearInterval(timerInterval);
             isRunning = false;
             stopwatchSeconds = 0;
+            laps = [];
+            lapsList.innerHTML = '';
             
             // Ensure display styles are reset
             display.classList.remove('bg-green-800', 'text-white');
@@ -355,7 +404,9 @@
          * Sets the timer to a specific minute preset.
          */
         function setPreset(minutes) {
-            handlePause();
+            if (isRunning) {
+                handleStartPause();
+            }
             
             // Set new default and total time for the Countdown Timer
             defaultSeconds = minutes * 60;
