@@ -146,7 +146,7 @@
         let currentMode = 'timer'; // 'timer' or 'stopwatch'
         let laps = [];
         
-        // --- DOM Elements ---
+        //  DOM Elements 
         const display = document.getElementById('timer-display');
         const startBtn = document.getElementById('start-btn');
         const resetBtn = document.getElementById('reset-btn');
@@ -158,6 +158,7 @@
         const lapBtn = document.getElementById('lap-btn');
         const lapsArea = document.getElementById('laps-area');
         const lapsList = document.getElementById('laps-list');
+ feature/settings-panel
         const settingsBtn = document.getElementById('settings-btn');
         const settingsPanel = document.getElementById('settings-panel');
         const alarmSoundSelect = document.getElementById('alarm-sound');
@@ -178,6 +179,8 @@
                 { type: 'square', frequency: 1567.98, duration: 0.08, delay: 0.2 }  // G6
             ]
         };
+
+ main
 
         function playAlarm() {
             const selectedSound = alarmSoundSelect.value;
@@ -210,7 +213,7 @@
         }
 
         /**
-         * Generic function to update the time display based on the current mode.
+         * Generic function to update the time display based on the current mode
          */
         function updateDisplay() {
             let secondsTotal = currentMode === 'timer' ? totalSeconds : stopwatchSeconds;
