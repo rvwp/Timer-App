@@ -95,11 +95,26 @@
                 </svg>
                 Reset
             </button>
+
+            <button id="lap-btn" onclick="handleLap()" class="flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white font-extrabold py-3 px-6 rounded-xl shadow-lg transition duration-150 transform hover:scale-105 active:scale-95 hidden">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v4a1 1 0 00.293.707l3 3a1 1 0 001.414-1.414L11 10.586V7z" clip-rule="evenodd" />
+                </svg>
+                Lap
+            </button>
         </div>
 
         <!-- Status Message Box -->
         <div id="status-message" class="text-center text-gray-300 min-h-[1.5rem] mt-4">
             Ready to focus?
+        </div>
+
+        <!-- Laps Display -->
+        <div id="laps-area" class="hidden w-full max-w-sm md:max-w-md bg-gray-800 p-4 rounded-xl shadow-inner mt-4">
+            <h3 class="text-lg font-semibold text-white text-center mb-2">Laps</h3>
+            <ol id="laps-list" class="list-decimal list-inside text-gray-300 space-y-1 overflow-y-auto max-h-40">
+                <!-- Lap times will be inserted here -->
+            </ol>
         </div>
 
     </div>
@@ -112,6 +127,7 @@
         let timerInterval = null;
         let isRunning = false;
         let currentMode = 'timer'; // 'timer' or 'stopwatch'
+        let laps = [];
         
         // --- DOM Elements ---
         const display = document.getElementById('timer-display');
@@ -123,6 +139,9 @@
         const statusMessage = document.getElementById('status-message');
         const modeTimerBtn = document.getElementById('mode-timer-btn');
         const modeStopwatchBtn = document.getElementById('mode-stopwatch-btn');
+        const lapBtn = document.getElementById('lap-btn');
+        const lapsArea = document.getElementById('laps-area');
+        const lapsList = document.getElementById('laps-list');
 
         /**
          * Generates and plays a simple alarm beep using the Web Audio API.
@@ -205,9 +224,13 @@
             if (currentMode === 'timer') {
                 modeTimerBtn.classList.add('border-red-500', 'text-white');
                 controlsArea.classList.remove('hidden');
+                lapBtn.classList.add('hidden');
+                lapsArea.classList.add('hidden');
             } else { // stopwatch
                 modeStopwatchBtn.classList.add('border-red-500', 'text-white');
                 controlsArea.classList.add('hidden');
+                lapBtn.classList.remove('hidden');
+                lapsArea.classList.remove('hidden');
             }
 
             // Control buttons availability
@@ -275,6 +298,29 @@
             }
         }
 
+        function handleLap() {
+            if (!isRunning) return;
+
+            const lapTime = stopwatchSeconds;
+            laps.push(lapTime);
+
+            const li = document.createElement('li');
+            li.textContent = `Lap ${laps.length}: ${formatTime(lapTime)}`;
+            lapsList.appendChild(li);
+        }
+
+        function formatTime(secondsTotal) {
+            const hours = Math.floor(secondsTotal / 3600);
+            const minutes = Math.floor((secondsTotal % 3600) / 60);
+            const seconds = secondsTotal % 60;
+
+            if (hours > 0) {
+                return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            } else {
+                return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            }
+        }
+
         // --- COUNTDOWN TIMER LOGIC ---
 
         function startCountdown() {
@@ -338,6 +384,8 @@
             clearInterval(timerInterval);
             isRunning = false;
             stopwatchSeconds = 0;
+            laps = [];
+            lapsList.innerHTML = '';
             
             // Ensure display styles are reset
             display.classList.remove('bg-green-800', 'text-white');
